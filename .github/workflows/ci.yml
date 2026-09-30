@@ -10,6 +10,24 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: rag_user
+          POSTGRES_PASSWORD: rag_password
+          POSTGRES_DB: enterprise_rag_db
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U rag_user -d enterprise_rag_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://rag_user:rag_password@localhost:5433/enterprise_rag_db
+      EMBEDDING_PROVIDER: mock
+      LLM_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,6 +35,10 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Enable pgvector
+        env:
+          PGPASSWORD: rag_password
+        run: psql -h localhost -p 5433 -U rag_user -d enterprise_rag_db -c 'CREATE EXTENSION IF NOT EXISTS vector;'
       - run: pytest -q
 
   frontend:
