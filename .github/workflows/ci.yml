@@ -26,8 +26,6 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql+psycopg://rag_user:rag_password@localhost:5433/enterprise_rag_db
-      EMBEDDING_PROVIDER: mock
-      LLM_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
