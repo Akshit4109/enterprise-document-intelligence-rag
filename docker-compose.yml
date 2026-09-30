@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: enterprise_rag_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+      POSTGRES_DB: enterprise_rag_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d enterprise_rag_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enterprise_rag_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://rag_user:rag_password@postgres:5432/enterprise_rag_db
+      ENVIRONMENT: production
+      DEBUG: "false"
+      STORAGE_LOCAL_ROOT: /app/storage/documents
+      EMBEDDING_PROVIDER: local
+      EMBEDDING_MODEL_NAME: sentence-transformers/all-MiniLM-L6-v2
+      EMBEDDING_DIMENSION: 384
+      LLM_PROVIDER: mock
+      RAG_MIN_RELEVANCE_THRESHOLD: "0.25"
+      USE_HYBRID_RETRIEVAL: "true"
+      RERANKER_ENABLED: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_storage:/app/storage/documents
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: enterprise_rag_frontend
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:
+  app_storage:

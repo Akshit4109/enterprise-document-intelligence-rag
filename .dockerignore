@@ -1,0 +1,11 @@
+.venv/
+.git/
+.pytest_cache/
+.vscode/
+__pycache__/
+*.pyc
+.DS_Store
+frontend/node_modules/
+frontend/dist/
+storage/documents/*
+!storage/documents/.gitkeep
