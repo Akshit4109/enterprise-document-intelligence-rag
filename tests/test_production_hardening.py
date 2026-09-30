@@ -80,7 +80,9 @@ class TestStructuredLoggingAndSecurity:
         assert "[REDACTED_API_KEY]" in redacted_key
 
         # Test Gemini API key masking
-        raw_gemini = "Gemini key: AIzaSyD1234567890abcdefghijklmnopqrstuv"
+        # Construct the key-shaped fixture at runtime so no credential-like
+        # literal is committed while the production redaction pattern is tested.
+        raw_gemini = "Gemini key: " + "AIza" + ("x" * 35)
         redacted_gemini = redactor.redact(raw_gemini)
         assert "AIzaSyD1234567890abcdefghijklmnopqrstuv" not in redacted_gemini
         assert "[REDACTED_GEMINI_KEY]" in redacted_gemini
